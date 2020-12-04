@@ -45,60 +45,56 @@ encryption={
 "0":"-----",
 }
 
-#function to translate english to morse
-def toMorse(message):
-    encrypted=""
-    for char in message.lower(): 
-         if char==" ":
-             encrypted+="   "
-         else:
-              encrypted+=encryption[char]+" "
-              
-    return encrypted
-
-#function to translate english to morse
-def toEnglish(message):
-    decrypted=""
-    message=message.split(" ")
-
-    for char in message: 
-        #reverse search the dictionary
-        for eng, mor in encryption.items():
-            if char==mor:
-                decrypted+=eng
-    return decrypted
 
 #handles /start and /help 
 @bot.message_handler(commands=['start',"help"])
 def send_welcome(message):
-	bot.reply_to(message, "Welcome to morsey bot, send an english text here to convert to morse code!")
+	bot.reply_to(message, "Welcome to morsey bot, use /encrypt to translate any english text to morse code and use /decrypt to translate any morse code to english!")
 
 #handles /encrypt[english text]
 @bot.message_handler(commands=["encrypt"])
 def encrypt(message):
-    if len(message.text)==8:
-        #error message if no text after command
-        bot.reply_to(message, "Please send your text after the commnad eg: /encrypt [text]")
-    else:
-        try:
-            toReply = toMorse(message.text[9:])
-            bot.reply_to(message,toReply)
-        except:
-            bot.reply_to(message, "Please try again, only english text")
+    #error message if no text after command
+    msg = bot.reply_to(message, "What would you like to encrypt?")
+    bot.register_next_step_handler(msg, toMorse)
+
+def toMorse(message):
+    encrypted=""
+    try:   
+        for char in message.text.lower(): 
+            if char==" ":
+                encrypted+="   "
+            else:
+                encrypted+=encryption[char]+" "
+                
+        bot.reply_to(message,encrypted)
+
+    except:
+        bot.reply_to(message,"Unable to encrypt this, please send only pure english text")
 
 #handles /decrypt[morse]
 @bot.message_handler(commands=["decrypt"])
 def decrypt(message):
-    if len(message.text)==8:
-        #error message if no text after command
-        bot.reply_to(message, "Please send your text after the commnad eg: /decrypt [morse code]")
-    else:
-        try:
-            toReply = toEnglish(message.text[9:])
-            bot.reply_to(message,toReply)
-        except:
-            bot.reply_to(message, "Please try again, invalid morse code")
+    msg = bot.reply_to(message, """\
+    What would you like to decrypt? 
+(use a space to separate every morse character)
+    """)
+    bot.register_next_step_handler(msg, toEnglish)
 
+def toEnglish(message):
+    decrypted=""
+    morse=message.text.split(" ")
+
+    try: 
+        for char in morse: 
+            #reverse search the dictionary
+            for eng, mor in encryption.items():
+                if char==mor:
+                    decrypted+=eng
+
+        bot.reply_to(message, decrypted)
+    except:
+        bot.reply_to(message,"Unable to encrypt this, please send only dots, dashes with a space between each morse character.")
 
 @server.route("/"+ Token, methods=['POST'])
 def getMessage():
